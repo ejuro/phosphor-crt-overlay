@@ -115,6 +115,21 @@ Item {
   }
   readonly property bool zonesActive: root.enabled && root.bezel && root.loaded
 
+  // ---- keeping the picture moving ------------------------------------------
+  // Hyprland re-renders a monitor when something damages it. A shader's `time`
+  // advancing is not damage: on an idle desktop a power transient repaints only
+  // on the two or three occasions something else happens to change, which turns
+  // a smooth fade into a couple of visible steps. Measured with nvidia-smi, a
+  // three-second warm-up drew one brief burst and then sat at idle.
+  //
+  // So while a timed shader is loaded, something has to commit a buffer every
+  // frame. The strip below is that something.
+  readonly property bool live: {
+    var rev = root.paramsRevision
+    return rev >= 0 && root.enabled && Number(currentParams().flicker) > 0
+  }
+  readonly property bool needsFrames: root.busy || (root.live && root.loaded)
+
   function edgeZone(screenItem, edge) {
     if (!root.zonesActive || !screenItem) return 0
     var p = root.zoneParams
@@ -581,6 +596,43 @@ Item {
       WlrLayershell.layer: WlrLayer.Bottom
       WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
       mask: Region {}
+    }
+  }
+
+  // A 1×1 transparent, click-through surface that commits a new buffer every
+  // frame while a transient runs or the tube is live. Invisible in itself — the
+  // point is the commit, which is the damage that keeps Hyprland redrawing the
+  // monitor so `time` actually reaches the screen. Overlay so it can never be
+  // occluded away, and it reserves nothing.
+  Variants {
+    model: Quickshell.screens
+    PanelWindow {
+      required property var modelData
+      screen: modelData
+      visible: root.needsFrames
+      color: "transparent"
+      anchors { top: true; left: true }
+      implicitWidth: 1
+      implicitHeight: 1
+      exclusiveZone: 0
+      WlrLayershell.namespace: "phosphor-tick"
+      WlrLayershell.layer: WlrLayer.Overlay
+      WlrLayershell.keyboardFocus: WlrKeyboardFocus.None
+      mask: Region {}
+
+      Rectangle {
+        anchors.fill: parent
+        // Both alphas are far below anything the eye can resolve; what matters
+        // is only that the buffer differs from the last one.
+        color: ticker.odd ? "#01ffffff" : "#02ffffff"
+      }
+
+      FrameAnimation {
+        id: ticker
+        running: root.needsFrames
+        property bool odd: false
+        onTriggered: ticker.odd = !ticker.odd
+      }
     }
   }
 
