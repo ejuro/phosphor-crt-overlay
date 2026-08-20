@@ -299,8 +299,12 @@ function build(params, opts) {
     s += "    fragColor = vec4(texture(tex, v_texcoord).rgb * raw, 1.0);\n"
     s += "    return;\n"
     s += "  }\n"
-    s += "  float env = smoothstep(" + f(hold) + ", " + f(warm) + ", time);\n"
-    s += "  env *= env;\n\n"
+    s += "  // Straight smoothstep, deliberately not squared. Squaring it put the\n"
+    s += "  // picture at a quarter brightness halfway through, so the whole rise\n"
+    s += "  // crammed into the back half and read as the image snapping on after a\n"
+    s += "  // long black. The output is already gamma-encoded, so an even ramp here\n"
+    s += "  // is an even ramp to the eye.\n"
+    s += "  float env = smoothstep(" + f(hold) + ", " + f(warm) + ", time);\n\n"
   } else if (mode === "off") {
     s += "  // Power-off: the phosphor loses its energy fast and the screen goes\n"
     s += "  // dark; the service clears the shader while it is black, so the plain\n"
@@ -367,6 +371,20 @@ function build(params, opts) {
     s += "    // toward grey preserves), so the same slider is safe on any tube.\n"
     if (p.saturation !== 1.0) s += "    col = mix(vec3(luma(col)), col, SAT);\n"
     if (p.contrast !== 1.0)   s += "    col = max((col - 0.5) * CONTRAST + 0.5, 0.0);\n"
+  }
+  if (mode === "on") {
+    // Brightness alone reads as a dimmer being turned up. A tube coming up to
+    // temperature is unfocused as well as dim: the beam is loose, so the
+    // picture resolves out of a soft glow rather than simply getting brighter.
+    // Four extra taps, and only while the transient runs.
+    s += "\n    // Warm-up defocus, converging as the tube comes up.\n"
+    s += "    float soft = 1.0 - env;\n"
+    s += "    vec2  sr   = soft * 3.0 * texel;\n"
+    s += "    vec3  haze = texture(tex, uv + vec2(sr.x, 0.0)).rgb\n"
+    s += "               + texture(tex, uv - vec2(sr.x, 0.0)).rgb\n"
+    s += "               + texture(tex, uv + vec2(0.0, sr.y)).rgb\n"
+    s += "               + texture(tex, uv - vec2(0.0, sr.y)).rgb;\n"
+    s += "    col = mix(col, haze * 0.25, soft * 0.8);\n"
   }
   if (p.mono) s += "\n    col = monoMap(col);\n"
   s += "  }\n\n"
