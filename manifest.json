@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "id": "io.github.ejuro.phosphor",
   "name": "Phosphor",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "author": "ejuro",
   "license": "MIT",
   "description": "A virtual CRT for your desktop: scanlines, phosphor mask, bloom and a period bezel — independent of your theme.",
@@ -10,7 +10,6 @@
     "service",
     "bar-widget"
   ],
-  "keepLoaded": true,
   "entryPoints": {
     "service": "Service.qml",
     "barWidget": "BarWidget.qml"
