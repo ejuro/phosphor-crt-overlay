@@ -285,16 +285,21 @@ function build(params, opts) {
          "    fragColor = texture(tex, v_texcoord);\n    return;\n  }\n\n"
   }
   if (mode === "on") {
+    // The cut to black stays fast whatever the warm-up is set to — the sudden
+    // darkness is the character of the thing. Everything after it scales: dark
+    // for the first 40% of the time, the picture rising through the rest.
+    var warm = clamp(opts.warmup === undefined ? 1.4 : opts.warmup, 0.4, 3.0)
+    var hold = warm * 0.4
     s += "  // Power-on, the terminal way: the desktop cuts to black almost at\n"
     s += "  // once, holds properly dark while the tube warms, then the picture\n"
     s += "  // rises out of the black — slow at first, the way a phosphor comes up\n"
     s += "  // to brightness. Deliberately not the TV line-and-dot.\n"
-    s += "  if (time < 0.22) {\n"
+    s += "  if (time < " + f(hold) + ") {\n"
     s += "    float raw = 1.0 - smoothstep(0.0, 0.04, time);\n"
     s += "    fragColor = vec4(texture(tex, v_texcoord).rgb * raw, 1.0);\n"
     s += "    return;\n"
     s += "  }\n"
-    s += "  float env = smoothstep(0.22, 0.62, time);\n"
+    s += "  float env = smoothstep(" + f(hold) + ", " + f(warm) + ", time);\n"
     s += "  env *= env;\n\n"
   } else if (mode === "off") {
     s += "  // Power-off: the phosphor loses its energy fast and the screen goes\n"

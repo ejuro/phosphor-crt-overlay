@@ -564,9 +564,60 @@ Panel {
               width: parent.width
               ui: root
               label: "Power fade"
-              hint: "On: black, a breath, the picture warms up. Off: the phosphor dies, then your desktop. Costs GPU only for the moment it lasts."
+              hint: (root.svc && root.svc.animate === true)
+                ? ""
+                : "On: black, a breath, the picture warms up. Off: the phosphor dies, then your desktop. Costs GPU only for the moment it lasts."
               checked: root.svc ? root.svc.animate === true : false
               onSwitched: if (root.svc) root.svc.setAnimate(!root.svc.animate)
+            }
+
+            Column {
+              width: parent.width
+              visible: root.svc ? root.svc.animate === true : false
+              spacing: Style.space(4)
+
+              Item {
+                width: parent.width
+                height: warmLabel.implicitHeight + warmSlider.height + Style.space(2)
+
+                Text {
+                  id: warmLabel
+                  text: "Warm-up"
+                  color: root.dim(0.75)
+                  font.family: root.fontFamily
+                  font.pixelSize: Style.font.caption
+                }
+                Text {
+                  anchors.right: parent.right
+                  text: Number(warmSlider.dragging ? warmSlider.liveValue
+                                                   : (root.svc ? root.svc.warmupTime : 1.4)).toFixed(1) + "s"
+                  color: root.dim(0.45)
+                  font.family: root.fontFamily
+                  font.pixelSize: Style.font.caption
+                }
+
+                PanelSlider {
+                  id: warmSlider
+                  anchors.bottom: parent.bottom
+                  width: parent.width
+                  bar: root.bar
+                  minimum: 0.4
+                  maximum: 3.0
+                  step: 0.1
+                  value: root.svc ? root.svc.warmupTime : 1.4
+                  onMoved: function(v) { if (root.svc) root.svc.setWarmupTime(v) }
+                  onRightClicked: if (root.svc) root.svc.setWarmupTime(1.4)
+                }
+              }
+
+              Text {
+                width: parent.width
+                text: "How long the tube takes to come up — dark for the first part of it, the picture rising out of the black through the rest. Switching off stays quick either way."
+                color: root.dim(0.5)
+                font.family: root.fontFamily
+                font.pixelSize: Style.font.caption
+                wrapMode: Text.WordWrap
+              }
             }
           }
 

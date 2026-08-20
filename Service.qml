@@ -23,6 +23,12 @@ Item {
   property var overrides: ({})
   property int monitorId: -1
   property bool animate: true
+  // How long the tube takes to come up, in seconds: black for the first 40% of
+  // it, the picture rising out of the black through the rest. A transition
+  // preference rather than a property of any one tube, so it lives here beside
+  // `animate` and survives switching tubes. Switching off is not scaled by it —
+  // the asymmetry is the point.
+  property real warmupTime: 1.4
   // The cabinet is lovely and it costs pointer accuracy: insetting the picture
   // moves everything away from where it responds, the bar most of all. Kept as
   // a display-mode choice rather than a preset value so it survives switching
@@ -145,7 +151,8 @@ Item {
       light: root.lightTheme,
       bezel: root.bezel,
       monitorId: root.monitorId,
-      mode: mode
+      mode: mode,
+      warmup: root.warmupTime
     })
     shaderFile.setText(src)
     applyFallbackTimer.restart()
@@ -187,11 +194,11 @@ Item {
     if (root.animate) {
       // Power-on: the desktop drops to black at once, holds dark while the
       // tube warms, then the picture fades up with the phosphor already lit.
-      // The envelope finishes 620ms after the shader loads; the timer is
+      // The envelope finishes `warmupTime` after the shader loads; the timer is
       // started from the apply, and overshooting it is harmless because the
       // transient ends identical to the static shader.
       root.busy = true
-      transientTimer.interval = 700
+      transientTimer.interval = Math.round((0.04 + root.warmupTime) * 1000) + 80
       render("on", 0)
     } else {
       render("static")
@@ -341,6 +348,14 @@ Item {
     root.changed()
   }
 
+  // Only shapes the next power-on, so there is nothing to re-render here.
+  function setWarmupTime(seconds) {
+    var v = Number(seconds)
+    if (isNaN(v)) return
+    root.warmupTime = Math.max(0.4, Math.min(3.0, v))
+    root.saveState()
+  }
+
   function clearOverrides() {
     root.overrides = ({})
     root.saveState()
@@ -371,6 +386,8 @@ Item {
       root.overrides = (data.overrides && typeof data.overrides === "object") ? data.overrides : ({})
       root.monitorId = (typeof data.monitorId === "number") ? data.monitorId : -1
       root.animate = (data.animate === undefined) ? true : !!data.animate
+      if (typeof data.warmupTime === "number")
+        root.warmupTime = Math.max(0.4, Math.min(3.0, data.warmupTime))
       root.bezel = (data.bezel === undefined) ? true : !!data.bezel
       if (data.baseline && typeof data.baseline === "object") {
         root.baseDamage = (typeof data.baseline.damage === "number") ? data.baseline.damage : -1
@@ -401,6 +418,7 @@ Item {
       userPresets: root.userPresets,
       monitorId: root.monitorId,
       animate: root.animate,
+      warmupTime: root.warmupTime,
       bezel: root.bezel,
       baseline: { damage: root.baseDamage }
     }, null, 2) + "\n")
@@ -583,6 +601,7 @@ Item {
     function reapply(): void { root.reapply() }
     function cabinet(on: string): void { root.setBezel(String(on) !== "false" && String(on) !== "off") }
     function warmup(on: string): void { root.setAnimate(String(on) !== "false" && String(on) !== "off") }
+    function fade(seconds: string): void { root.setWarmupTime(parseFloat(String(seconds))) }
     // Scriptable tuning: `omarchy-shell phosphor set flicker 0.1`,
     // `set trueWarp true`, `stock flicker`. Values are clamped by the shader
     // builder, so nothing typed here can produce a shader that fails.
@@ -602,7 +621,8 @@ Item {
     function rename(name: string): void { root.renameUserPreset(root.presetId, name) }
     function status(): string {
       return JSON.stringify({ enabled: root.enabled, preset: root.presetId, light: root.lightTheme,
-                              bezel: root.bezel, warmup: root.animate, damage: root.enabled ? root.litDamage() : root.baseDamage })
+                              bezel: root.bezel, warmup: root.animate, fade: root.warmupTime,
+                              damage: root.enabled ? root.litDamage() : root.baseDamage })
     }
   }
 }
