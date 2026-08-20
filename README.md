@@ -4,7 +4,7 @@ Phosphor turns your desktop into the picture on an old cathode-ray tube. Scanlin
 
 It is not a theme. Your theme owns colours, apps and wallpaper; Phosphor owns the monitor those things appear on, so any theme combines with any tube.
 
-![The Phosphor panel beside a desktop rendered through the VT-220 amber tube](preview.png)
+![A terminal seen through the 5151 green phosphor tube: scanlines, bloom and a vignette inside a beige cabinet](preview.png)
 
 ## The tubes
 
