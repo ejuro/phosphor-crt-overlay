@@ -13,7 +13,6 @@
 var USER_PREFIX = "user-"
 
 var DEFAULTS = {
-  bezel: true,
   bezelWidth: 0.035,
   // The rails that would displace the bar are capped slim so plugin drawers
   // keep opening under their icons; the chin, which displaces nothing, carries

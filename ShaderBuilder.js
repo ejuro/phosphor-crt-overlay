@@ -4,7 +4,7 @@
 //
 // Uniform names are matched by string in Hyprland's
 // Shader.cpp:getUniformLocations(), so they must be spelled exactly:
-//   tex, fullSize (aliases screen_size/screenSize), wl_output, time.
+//   tex, fullSize (aliases screen_size/screenSize), time.
 //
 // Two rules the whole design hangs on:
 //
@@ -56,7 +56,6 @@ function sanitize(p, light, bezel) {
   var even = cabinet && !!p.evenFrame
   return {
     cabinet: cabinet,
-    evenFrame: even,
     bezelWidth: fw,
     railWidth: cabinet ? (even ? fw : Math.min(fw, LIP)) : 0.0,
     trueWarp: !!p.trueWarp,
@@ -223,7 +222,6 @@ function build(params, opts) {
   var transient = (mode === "on" || mode === "off")
   var live = (mode === "live")
   var timed = transient || live
-  var monitorId = (opts.monitorId === undefined || opts.monitorId === null) ? -1 : opts.monitorId
 
   var s = ""
   s += "#version 300 es\n"
@@ -232,7 +230,6 @@ function build(params, opts) {
   s += "in vec2 v_texcoord;\n"
   s += "uniform sampler2D tex;\n"
   s += "uniform vec2 fullSize;\n"
-  if (monitorId >= 0) s += "uniform int wl_output;\n"
   if (timed) s += "uniform float time;\n"
   s += "\nlayout(location = 0) out vec4 fragColor;\n\n"
 
@@ -279,11 +276,6 @@ function build(params, opts) {
   s += monoFunction(p) + "\n"
 
   s += "void main() {\n"
-  if (monitorId >= 0) {
-    s += "  // Phosphor is limited to one output; every other screen passes through.\n"
-    s += "  if (wl_output != " + Math.round(monitorId) + ") {\n" +
-         "    fragColor = texture(tex, v_texcoord);\n    return;\n  }\n\n"
-  }
   if (mode === "on") {
     // The cut to black stays fast whatever the warm-up is set to — the sudden
     // darkness is the character of the thing. Everything after it scales: dark

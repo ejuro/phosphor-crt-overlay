@@ -21,7 +21,6 @@ Item {
   property bool enabled: false
   property string presetId: "trinitron"
   property var overrides: ({})
-  property int monitorId: -1
   property bool animate: true
   // How long the tube takes to come up, in seconds: black for the first 40% of
   // it, the picture rising out of the black through the rest. A transition
@@ -165,7 +164,6 @@ Item {
     var src = ShaderBuilder.build(root.currentParams(), {
       light: root.lightTheme,
       bezel: root.bezel,
-      monitorId: root.monitorId,
       mode: mode,
       warmup: root.warmupTime
     })
@@ -399,7 +397,6 @@ Item {
       root.userPresets = Array.isArray(data.userPresets) ? data.userPresets : []
       root.presetId = Presets.byId(data.preset || "trinitron", root.userPresets).id
       root.overrides = (data.overrides && typeof data.overrides === "object") ? data.overrides : ({})
-      root.monitorId = (typeof data.monitorId === "number") ? data.monitorId : -1
       root.animate = (data.animate === undefined) ? true : !!data.animate
       if (typeof data.warmupTime === "number")
         root.warmupTime = Math.max(0.4, Math.min(3.0, data.warmupTime))
@@ -431,7 +428,6 @@ Item {
       preset: root.presetId,
       overrides: root.overrides,
       userPresets: root.userPresets,
-      monitorId: root.monitorId,
       animate: root.animate,
       warmupTime: root.warmupTime,
       bezel: root.bezel,
